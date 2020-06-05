@@ -1,0 +1,73 @@
+  def mainBaseProps = new Properties()
+  def osdir = ''
+  def os = System.getProperty("os.name")
+  if(os.toString().toUpperCase().startsWith("WINDOWS")) {
+    osdir = '\\'
+  }else {
+    osdir = '/'
+  }
+  new File(rootDir.toString().substring(0,rootDir.toString().lastIndexOf(osdir))+"/${mainProjectName}"+"/gradle.properties").withInputStream { 
+    stream -> mainBaseProps.load(stream) 
+  }
+  def mainBaseConfig = new ConfigSlurper().parse(mainBaseProps)
+  buildscript {
+  def baseProps = new Properties()
+  def pluginProps = new Properties()
+   def osdir = ''
+  def os = System.getProperty("os.name")
+  if(os.toString().toUpperCase().startsWith("WINDOWS")) {
+    osdir = '\\'
+  }else {
+    osdir = '/'
+  }
+  new File(rootDir.toString().substring(0,rootDir.toString().lastIndexOf(osdir))+"/${mainProjectName}"+"/gradle.properties").withInputStream { 
+    stream -> baseProps.load(stream) 
+  }
+  new File(rootDir.toString().substring(0,rootDir.toString().lastIndexOf(osdir))+"/${mainProjectName}"+"/uapconfig.properties").withInputStream { 
+    stream -> pluginProps.load(stream) 
+  }
+  def baseConfig = new ConfigSlurper().parse(baseProps)
+  def pluginConfig = new ConfigSlurper().parse(pluginProps)
+
+  if(!baseConfig.mavenRepository.equals("") && baseConfig.mavenRepository.toBoolean()) {
+    repositories {
+     maven { url baseConfig.repositoryURL }
+     mavenLocal() 
+     mavenCentral()
+  }
+  }else{
+   repositories {
+    flatDir {
+           dirs baseConfig.pluginPath
+       }
+     }
+  }
+     
+  dependencies {
+      classpath group: pluginConfig.DepMagPluginGroup, name: pluginConfig.DepMagPluginName, version: pluginConfig.DepMagPluginVersion
+      classpath group: pluginConfig.SprbtLoadToolGroup, name: pluginConfig.SprbtLoadToolName, version: pluginConfig.SprbtLoadToolVersion
+      classpath group: pluginConfig.SpringcoreGroup, name: pluginConfig.SpringcoreName, version: pluginConfig.SpringcoreVersion
+      classpath group: pluginConfig.SprbtGradlePluginGroup, name: pluginConfig.SprbtGradlePluginName, version: pluginConfig.SprbtGradlePluginVersion
+  }
+ }
+
+
+  version = "${version}"
+
+  //引用公共配置
+  apply from: "../"+"${mainProjectName}"+"/baseconfig.gradle"
+  mainClassName = "${mainClass}"
+  
+  //引用私有配置
+  apply from: projectDir.toString()+"/privatebuild.gradle"
+  jar {
+      manifest {
+          attributes 'Main-Class': "${mainClass}"
+      }
+      from('src/main/java') {
+        include '**/*.xml'
+        }
+  }
+  
+
+
